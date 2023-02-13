@@ -1,0 +1,7 @@
+syntax = "proto2";
+package jkv;
+
+message WalSnapshot {
+  required uint64 index = 1;
+  required uint64 term = 2;
+}
