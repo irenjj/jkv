@@ -28,4 +28,5 @@ set(COMMLIBS
     jrpc.a
     jkv)
 
+add_subdirectory(snapper_test)
 add_subdirectory(wal_test)

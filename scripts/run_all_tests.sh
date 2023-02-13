@@ -2,4 +2,5 @@
 
 cd build/test
 
+cd snapper_test && ./snapper_test && cd ..
 cd wal_test && ./wal_test && cd ..
