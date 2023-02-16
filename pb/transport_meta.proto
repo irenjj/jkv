@@ -1,0 +1,14 @@
+syntax = "proto3";
+package jkv;
+
+enum TransportType {
+  kStream = 0;
+  kPipeline = 1;
+  kDebug = 2;
+};
+
+message TransportMeta {
+  TransportType type = 1;
+  uint32 len = 2;
+  repeated bytes data = 3;
+}

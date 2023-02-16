@@ -20,6 +20,39 @@ Wal::Wal() : dir_(), start_(), last_index_(0), hard_state_(), files_() {}
 Wal::Wal(const std::string& dir)
     : dir_(dir), start_(), last_index_(0), hard_state_(), files_() {}
 
+Wal::Wal(const std::string& dir, const WalSnapshot& snap)
+    : dir_(dir), start_(), last_index_(0), hard_state_(), files_() {
+  std::vector<std::string> names;
+  GetWalNames(dir_, &names);
+  if (names.empty()) {
+    JLOG_FATAL << "wal not found";
+  }
+
+  uint64_t name_index;
+  if (!SearchIndex(names, snap.index(), &name_index)) {
+    JLOG_FATAL << "wal not found";
+  }
+
+  std::vector<std::string> check_names(names.begin() + name_index, names.end());
+  if (!IsValidSeq(check_names)) {
+    JLOG_FATAL << "invalid wal seq";
+  }
+
+  for (const auto& name : names) {
+    uint64_t seq;
+    uint64_t index;
+    if (!ParseWalName(name, &seq, &index)) {
+      JLOG_FATAL << "invalid wal name " << name;
+    }
+
+    boost::filesystem::path path = boost::filesystem::path(dir_) / name;
+    std::shared_ptr<WalFile> file(new WalFile(path.string().c_str(), seq));
+    files_.push_back(file);
+  }
+
+  memcpy(&start_, &snap, sizeof(snap));
+}
+
 void Wal::Create(const std::string& dir) {
   boost::filesystem::path wal_file_path =
       boost::filesystem::path(dir) / WalFileName(0, 0);
@@ -121,7 +154,7 @@ Status Wal::Save(const jraft::HardState& hs,
   Status status;
 
   for (const auto& entry : ents) {
-    status = SaveEntry(entry);
+    status = SaveEntry(*entry);
     if (!status.ok()) {
       return status;
     }
@@ -293,17 +326,17 @@ void Wal::HandleRecordWalRecord(WalType type, const char* data, size_t data_len,
                                 bool* match_snap, jraft::HardState* hs,
                                 std::vector<EntryPtr>* ents) {
   if (type == kWalEntryType) {
-    jraft::Entry ent;
-    if (!ent.ParseFromArray((const void*)data, data_len)) {
+    EntryPtr ent;
+    if (!ent->ParseFromArray((const void*)data, data_len)) {
       JLOG_FATAL << "failed to parse from array";
     }
 
-    if (ent.index() > start_.index()) {
-      ents->resize(ent.index() - start_.index() - 1);
+    if (ent->index() > start_.index()) {
+      ents->resize(ent->index() - start_.index() - 1);
       ents->push_back(ent);
     }
 
-    last_index_ = ent.index();
+    last_index_ = ent->index();
   } else if (type == kWalStateType) {
     if (!hs->ParseFromArray((const void*)data, data_len)) {
       JLOG_FATAL << "failed to parse from array";

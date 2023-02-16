@@ -28,5 +28,6 @@ set(COMMLIBS
     jrpc.a
     jkv)
 
+add_subdirectory(byte_buffer_test)
 add_subdirectory(snapper_test)
 add_subdirectory(wal_test)

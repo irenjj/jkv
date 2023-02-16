@@ -13,12 +13,13 @@ namespace jkv {
 class Status;
 class WalFile;
 using WalFilePtr = std::shared_ptr<WalFile>;
-using EntryPtr = jraft::Entry;
+using EntryPtr = std::shared_ptr<jraft::Entry>;
 
 class Wal {
  public:
   Wal();
   explicit Wal(const std::string& dir);
+  Wal(const std::string& dir, const WalSnapshot& snap);
   ~Wal() = default;
 
   static void Create(const std::string& dir);
@@ -56,7 +57,5 @@ class Wal {
 };
 
 using WalPtr = std::shared_ptr<Wal>;
-
-WalPtr Open(const std::string& dir, const WalSnapshot& snap);
 
 }  // namespace jkv

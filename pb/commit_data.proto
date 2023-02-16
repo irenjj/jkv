@@ -1,0 +1,18 @@
+syntax = "proto2";
+package jkv;
+
+enum RedisCommitType {
+  kCommitSet = 0;
+  kCommitDel = 1;
+}
+
+message RedisCommitData {
+  required RedisCommitType type = 1;
+  repeated string strs = 2;
+}
+
+message RaftCommit {
+  required uint32 node_id = 1;
+  required uint32 commit_id = 2;
+  required RedisCommitData redis_data = 3;
+}

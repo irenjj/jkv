@@ -1,7 +1,6 @@
 // Copyright (c) renjj - All Rights Reserved
 #include <boost/filesystem.hpp>
 #include <gtest/gtest.h>
-#include <jrpc/base/logging/logging.h>
 
 #include "mem_kv/common/status.h"
 #include "mem_kv/snapper/snapper.h"
