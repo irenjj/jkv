@@ -120,6 +120,8 @@ void Peer::Propose(const std::string& data, const StatusCallback& cb) {
       jraft::ErrNum err = raw_node_->Propose(data);
       if (err != jraft::kOk) {
         cb(Status::IOError("can't propose"));
+      } else {
+        cb(Status::OK());
       }
       PullReadyEvents();
     });
@@ -127,6 +129,8 @@ void Peer::Propose(const std::string& data, const StatusCallback& cb) {
     jraft::ErrNum err = raw_node_->Propose(data);
     if (err != jraft::kOk) {
       cb(Status::IOError("can't propose"));
+    } else {
+      cb(Status::OK());
     }
     PullReadyEvents();
   }
@@ -138,6 +142,8 @@ void Peer::Process(MessagePtr msg, const StatusCallback& cb) {
       jraft::ErrNum err = this->raw_node_->Step(*msg);
       if (err != jraft::kOk) {
         cb(Status::IOError("can't process"));
+      } else {
+        cb(Status::OK());
       }
       PullReadyEvents();
     });
@@ -145,6 +151,8 @@ void Peer::Process(MessagePtr msg, const StatusCallback& cb) {
     jraft::ErrNum err = this->raw_node_->Step(*msg);
     if (err != jraft::kOk) {
       cb(Status::IOError("can't process"));
+    } else {
+      cb(Status::OK());
     }
     PullReadyEvents();
   }

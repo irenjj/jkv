@@ -14,6 +14,8 @@ ServerSession::ServerSession(boost::asio::io_service& io_service,
 
 void ServerSession::StartReadMeta() {
   // assert(sizeof(meta_) == 5);
+  meta_.set_type(kDebug);
+  meta_.set_len(0);
   auto self = shared_from_this();
   auto buffer = boost::asio::buffer(&meta_, sizeof(meta_));
   auto handler = [self](const boost::system::error_code& error,
@@ -57,8 +59,11 @@ void ServerSession::StartReadMessage() {
       JLOG_ERROR << "invalid data len " << bytes << ", " << len;
       return;
     }
+    JLOG_WARN << "decode message";
     self->DecodeMessage(len);
   };
+  boost::asio::async_read(socket_, buffer, boost::asio::transfer_exactly(len),
+                          handler);
 }
 
 void ServerSession::DecodeMessage(uint32_t len) {

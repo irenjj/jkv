@@ -10,7 +10,7 @@ ClientSession::ClientSession(boost::asio::io_service& io_service,
     : socket_(io_service),
       endpoint_(client->endpoint_),
       peer_id_(client->peer_id_),
-      client_(nullptr),
+      client_(client),
       connected_(false),
       buffer_() {}
 
@@ -49,7 +49,6 @@ void ClientSession::Send(TransportType type, const uint8_t* data,
 
 void ClientSession::StartWrite() {
   if (!buffer_.Readable()) {
-    JLOG_ERROR << "buffer is not readable";
     return;
   }
 
@@ -63,7 +62,6 @@ void ClientSession::StartWrite() {
       return;
     }
 
-    JLOG_WARN << "start write";
     this->buffer_.ReadBytes(bytes);
     this->StartWrite();
   };
