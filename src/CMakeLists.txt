@@ -9,3 +9,4 @@ aux_source_directory(mem_kv/transport JKV_SRCS)
 aux_source_directory(mem_kv/wal JKV_SRCS)
 
 add_library(jkv STATIC ${JKV_SRCS} ${PROTO_SRCS})
+target_link_libraries(jkv jraft)

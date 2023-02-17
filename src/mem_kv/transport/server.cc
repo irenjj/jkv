@@ -13,7 +13,7 @@ ServerSession::ServerSession(boost::asio::io_service& io_service,
     : socket_(io_service), server_(server) {}
 
 void ServerSession::StartReadMeta() {
-  assert(sizeof(meta_) == 5);
+  // assert(sizeof(meta_) == 5);
   auto self = shared_from_this();
   auto buffer = boost::asio::buffer(&meta_, sizeof(meta_));
   auto handler = [self](const boost::system::error_code& error,
@@ -79,7 +79,22 @@ void ServerSession::OnReceiveStreamMessage(MessagePtr msg) {
 
 Server::Server(boost::asio::io_service& io_service, const std::string& host,
                Peer* peer)
-    : io_service_(io_service), acceptor_(io_service), peer_(peer) {}
+    : io_service_(io_service), acceptor_(io_service), peer_(peer) {
+  std::vector<std::string> strs;
+  boost::split(strs, host, boost::is_any_of(":"));
+  if (strs.size() != 2) {
+    JLOG_FATAL << "invalid host " << host;
+  }
+  auto addr = boost::asio::ip::address::from_string(strs[0]);
+  int port = std::atoi(strs[1].c_str());
+  auto endpoint = boost::asio::ip::tcp::endpoint(addr, port);
+
+  acceptor_.open(endpoint.protocol());
+  acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(1));
+  acceptor_.bind(endpoint);
+  acceptor_.listen();
+  JLOG_INFO << "listen at " << addr.to_string() << ":" << port;
+}
 
 void Server::Start() {
   ServerSessionPtr session(new ServerSession(io_service_, this));

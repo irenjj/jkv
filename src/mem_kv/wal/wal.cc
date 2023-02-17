@@ -65,6 +65,8 @@ void Wal::Create(const std::string& dir) {
   {
     std::unique_ptr<WalFile> wal_file(new WalFile(tmp_path.c_str(), 0));
     WalSnapshot snap;
+    snap.set_index(0);
+    snap.set_term(0);
     std::string str;
     if (!snap.SerializeToString(&str)) {
       JLOG_FATAL << "failed to serialize to str";
@@ -229,6 +231,7 @@ void Wal::GetWalNames(const std::string& dir, std::vector<std::string>* names) {
     boost::filesystem::path filename = (*it).path().filename();
     boost::filesystem::path extension = filename.extension();
     if (extension != ".wal") {
+      JLOG_WARN << "extension: " << extension.string() << " is not .wal";
       continue;
     }
     names->push_back(filename.string());
@@ -297,7 +300,7 @@ bool Wal::IsValidSeq(const std::vector<std::string>& names) {
 // equal to or smaller than the given index. The given names MUST be sorted.
 bool Wal::SearchIndex(const std::vector<std::string>& names, uint64_t index,
                       uint64_t* name_index) {
-  for (size_t i = names.size() - 1; i > 0; i--) {
+  for (int i = names.size() - 1; i >= 0; i--) {
     const std::string& name = names[i];
     uint64_t seq;
     uint64_t cur_index;

@@ -330,6 +330,7 @@ void PeerStore::StartAccept() {
           JLOG_ERROR << "accept error " << error.message();
           return;
         }
+        JLOG_INFO << peer_->id() << " start to accept";
         this->StartAccept();
         session->Start();
       });

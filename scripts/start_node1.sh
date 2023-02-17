@@ -1,0 +1,1 @@
+../build/example/mem_kv/kv_server --id 1 --cluster=127.0.0.1:6000,127.0.0.1:6001,127.0.0.1:6002 --port 7000

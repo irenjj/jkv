@@ -4,7 +4,6 @@
 #include <jraft/common/util.h>
 #include <jraft/memory_storage.h>
 #include <jraft/raft.h>
-#include <jraft/rawnode.h>
 #include <jraft/ready.h>
 #include <jrpc/base/logging/logging.h>
 
@@ -77,6 +76,8 @@ Peer::Peer(uint64_t id, uint64_t port, const std::string& cluster)
   for (int i = 0; i < peers_.size(); i++) {
     storage_cs->add_voters(i + 1);
   }
+
+  raw_node_.reset(new jraft::RawNode(c));
 }
 
 Peer::~Peer() {
@@ -85,6 +86,21 @@ Peer::~Peer() {
     transport_->Stop();
     transport_ = nullptr;
   }
+}
+
+void Peer::Start() {
+  transport_ = std::make_shared<Transport>(this, id_);
+  std::string host = peers_[id_ - 1];
+  transport_->Start(host);
+
+  for (int i = 0; i < peers_.size(); i++) {
+    uint64_t peer_id = i + 1;
+    if (peer_id == id_) {
+      continue;
+    }
+    transport_->AddPeer(peer_id, peers_[i]);
+  }
+  Schedule();
 }
 
 void Peer::Stop() {
@@ -244,7 +260,7 @@ void Peer::MaybeTriggerSnapshot() {
 
 // Replays wal entries into the raft instance.
 void Peer::ReplayWal() {
-  JLOG_DEBUG << "replaying wal of node " << id_;
+  JLOG_INFO << "replaying wal of node " << id_;
 
   jraft::Snapshot snap;
   Status status = snapper_->LoadSnap(&snap);
@@ -317,7 +333,7 @@ void Peer::PullReadyEvents() {
   while (raw_node_->HasReady()) {
     jraft::ReadyPtr rd = raw_node_->GetReady();
     if (!rd->ContainsUpdates()) {  // should be consistent with HasReady()
-      JLOG_WARN << "ready not contains updates";
+      JLOG_DEBUG << "ready not contains updates";
       return;
     }
 

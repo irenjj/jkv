@@ -23,9 +23,9 @@ link_directories(${CMAKE_SOURCE_DIR}/build/src/)
 set(COMMLIBS
     pthread
     gtest
-    protobuf.a
+    protobuf
     jraft
-    jrpc.a
+    jrpc
     jkv)
 
 add_subdirectory(byte_buffer_test)

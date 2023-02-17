@@ -3,6 +3,7 @@
 
 #include <jrpc/base/logging/logging.h>
 
+#include "mem_kv/peer/peer.h"
 #include "mem_kv/transport/client.h"
 #include "mem_kv/transport/server.h"
 
@@ -48,6 +49,7 @@ void Transport::Send(const std::vector<jraft::Message>& msgs) {
       }
       auto it = peers_.find(msg.to());
       if (it != peers_.end()) {
+        // JLOG_WARN << peer_->id() << " send to " << msg.to();
         it->second->Send(msg);
         continue;
       }

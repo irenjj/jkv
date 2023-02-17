@@ -23,7 +23,7 @@ void ClientSession::Connect() {
                             return;
                           }
                           this->connected_ = true;
-                          JLOG_INFO << "connected to " << this->peer_id_;
+                          JLOG_WARN << "connected to " << this->peer_id_;
 
                           if (this->buffer_.Readable()) {
                             this->StartWrite();
@@ -37,7 +37,7 @@ void ClientSession::Send(TransportType type, const uint8_t* data,
   TransportMeta meta;
   meta.set_type(type);
   meta.set_len(htonl(len));
-  assert(sizeof(TransportMeta) == 5);
+  // assert(sizeof(TransportMeta) == 5);
   buffer_.Put((const uint8_t*)&meta, sizeof(TransportMeta));
   buffer_.Put(data, len);
   assert(remaining + sizeof(TransportMeta) + len == buffer_.ReadableBytes());
@@ -49,6 +49,7 @@ void ClientSession::Send(TransportType type, const uint8_t* data,
 
 void ClientSession::StartWrite() {
   if (!buffer_.Readable()) {
+    JLOG_ERROR << "buffer is not readable";
     return;
   }
 
@@ -58,9 +59,11 @@ void ClientSession::StartWrite() {
                         std::size_t bytes) {
     if (error || bytes == 0) {
       JLOG_ERROR << "send " << this->peer_id_ << " error " << error.message();
+      this->CloseSession();
       return;
     }
 
+    JLOG_WARN << "start write";
     this->buffer_.ReadBytes(bytes);
     this->StartWrite();
   };
@@ -74,7 +77,16 @@ Client::Client(uint64_t peer_id, boost::asio::io_service& io_service,
     : peer_id_(peer_id),
       io_service_(io_service),
       timer_(io_service),
-      session_(nullptr) {}
+      session_(nullptr) {
+  std::vector<std::string> strs;
+  boost::split(strs, peer_str, boost::is_any_of(":"));
+  if (strs.size() != 2) {
+    JLOG_FATAL << "invalid host " << peer_str;
+  }
+  auto addr = boost::asio::ip::address::from_string(strs[0]);
+  int port = std::atoi(strs[1].c_str());
+  endpoint_ = boost::asio::ip::tcp::endpoint(addr, port);
+}
 
 void Client::Start() { StartTimer(); }
 

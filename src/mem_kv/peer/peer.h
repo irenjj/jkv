@@ -28,6 +28,7 @@ class Peer {
   Peer(uint64_t id, uint64_t port, const std::string& cluster);
   ~Peer();
 
+  void Start();
   void Stop();
 
   void Propose(const std::string& data, const StatusCallback& cb);
