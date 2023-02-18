@@ -17,7 +17,6 @@ class Thread : noncopyable {
   typedef std::function<void()> ThreadFunc;
 
   explicit Thread(ThreadFunc, const std::string &name = std::string());
-  // FIXME: make it movable in C++11
   ~Thread();
 
   void start();

@@ -1,0 +1,7 @@
+syntax = "proto3";
+package jkv;
+
+message PeerMeta {
+  uint64 host_id = 1;
+  uint64 peer_id = 2;
+}

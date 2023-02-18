@@ -26,7 +26,7 @@ set(COMMLIBS
     protobuf
     jraft
     jrpc
-    jkv)
+    mem_kv)
 
 add_subdirectory(byte_buffer_test)
 add_subdirectory(snapper_test)

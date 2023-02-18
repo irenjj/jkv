@@ -41,3 +41,6 @@ build/
 cmake-build-debug/
 
 node_*/
+host_1/
+host_2/
+host_3/

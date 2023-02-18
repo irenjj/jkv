@@ -6,9 +6,7 @@
 namespace jbase {
 namespace CurrentThread {
 // internal
-// 线程编号，从0开始，全局唯一
 extern __thread int t_cachedTno;
-// 线程id
 extern __thread int t_cachedTid;
 extern __thread char t_tidString[32];
 extern __thread int t_tidStringLength;
