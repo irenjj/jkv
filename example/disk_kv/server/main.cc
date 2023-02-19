@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
   // register service
   auto raft_msg_service =
       std::make_shared<jkv::RaftMsgServiceImpl>(host.get());
- auto kv_service = std::make_shared<jkv::KvServiceImpl>(host.get());
+  auto kv_service = std::make_shared<jkv::KvServiceImpl>(host.get());
   rpc_server->AddService(raft_msg_service.get());
   rpc_server->AddService(kv_service.get());
   rpc_server->Start();

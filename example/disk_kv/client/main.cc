@@ -10,23 +10,21 @@
 #include "example/disk_kv/client/client_flags.h"
 #include "kv_op.pb.h"
 
+using namespace jkv;
+
 class KvClient {
  public:
   KvClient(const std::string& ip, uint16_t port, jrpc::EventWorker* worker)
       : worker_(worker), client_(nullptr) {
     jrpc::SockAddress addr(ip, port);
-    client_ = new jrpc::RpcClient(jrpc::kTcp, worker_, addr, "client");
+    client_ = new jrpc::RpcClient(jrpc::kTcp, worker_, addr, "");
     client_->set_timeout_ms(300);
     client_->set_rpc_depth(10000);
     if (client_->Connect()) {
       JLOG_FATAL << "failed to connect";
     }
   }
-  ~KvClient() {
-    if (client_) {
-      delete client_;
-    }
-  }
+  ~KvClient() {}
 
   void Get(const std::string& key) {
     jkv::KvService_Stub stub(client_);
@@ -41,7 +39,6 @@ class KvClient {
   }
 
   void Put(const std::string& key, const std::string& val) {
-    JLOG_INFO << "\n\n\nput1\n\n\n";
     jkv::KvService_Stub stub(client_);
     auto* cntl = new jrpc::RpcController(client_->conn());
     jkv::KvReq req;
@@ -51,7 +48,6 @@ class KvClient {
     auto* resp = new jkv::KvResp();
     google::protobuf::Closure* done = google::protobuf::NewCallback(
         this, &KvClient::PutCb, cntl, resp);
-    JLOG_INFO << "\n\n\nput2\n\n\n";
     stub.KvOp(cntl, &req, resp, done);
   }
 
@@ -68,20 +64,6 @@ class KvClient {
   }
 
  private:
-  void PutCb(jrpc::RpcController* cntl, jkv::KvResp* resp) {
-    std::unique_ptr<jrpc::RpcController> cntl_guard(cntl);
-    std::unique_ptr<jkv::KvResp> resp_guard(resp);
-
-    if (cntl->Failed()) {
-      JLOG_FATAL << "put kv rpc failed, error text: " << cntl->ErrorText();
-    } else if (resp->rejected()) {
-      JLOG_FATAL << "server rejected put request";
-    } else {
-      JLOG_INFO << "put kv request success";
-    }
-    ::exit(0);
-  }
-
   void GetCb(jrpc::RpcController* cntl, jkv::KvResp* resp) {
     std::unique_ptr<jrpc::RpcController> cntl_guard(cntl);
     std::unique_ptr<jkv::KvResp> resp_guard(resp);
@@ -92,6 +74,20 @@ class KvClient {
       JLOG_FATAL << "server rejected get request";
     } else {
       JLOG_INFO << "get kv request success";
+    }
+    ::exit(0);
+  }
+
+  void PutCb(jrpc::RpcController* cntl, jkv::KvResp* resp) {
+    std::unique_ptr<jrpc::RpcController> cntl_guard(cntl);
+    std::unique_ptr<jkv::KvResp> resp_guard(resp);
+
+    if (cntl->Failed()) {
+      JLOG_FATAL << "put kv rpc failed, error text: " << cntl->ErrorText();
+    } else if (resp->rejected()) {
+      JLOG_FATAL << "server rejected put request";
+    } else {
+      JLOG_INFO << "put kv request success";
     }
     ::exit(0);
   }

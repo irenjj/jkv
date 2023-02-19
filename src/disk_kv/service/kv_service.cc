@@ -14,8 +14,6 @@ KvServiceImpl::KvServiceImpl(PeerHost* host) : host_(host) {}
 void KvServiceImpl::KvOp(::google::protobuf::RpcController* cntl,
                          const ::jkv::KvReq* req, ::jkv::KvResp* resp,
                          ::google::protobuf::Closure* done) {
-  JLOG_INFO << "\n\n\ncome here\n\n\n";
-
   host_->mutable_worker()->loop()->RunInLoop(
       std::bind(&KvServiceImpl::KvOpCb, this, cntl, req, resp, done));
 }

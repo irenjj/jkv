@@ -87,13 +87,13 @@ void Peer::ProposeKvOp(const KvReq* req, KvResp* resp,
   if (!req->SerializeToString(&context)) {
     JLOG_FATAL << "failed to serialize to str";
   }
-  raw_node_->Propose(context);
 
   uint64_t ni = NextProposalIndex();
   ProposalPtr p = std::make_shared<Proposal>(ni, Term(), resp, done);
   if (IsLeader()) {
     proposals_.push_back(p);
   }
+  raw_node_->Propose(context);
 }
 
 // members format: host1,peer1,ip1,port1|host2,peer2,ip2,port2|...
