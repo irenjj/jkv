@@ -1,6 +1,21 @@
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -fprofile-arcs \
-                      -ftest-coverage -Wall -std=c++11")
+set(COMMLIBS
+    pthread
+    protobuf
+    gflags
+    event
+    libevent.a
+    pthread
+    numa
+    leveldb
 
-#link_directories(${CMAKE_SOURCE_DIR}/build/src/disk_kv)
+    jraft.a
+    jrpc.a
+    jkv)
 
-add_subdirectory(disk_kv)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
+include_directories(${Boost_INCLUDE_DIRS})
+set(LIBS
+    Boost::system
+    Boost::filesystem)
+
+add_subdirectory(echo)

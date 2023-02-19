@@ -33,6 +33,7 @@
 
 .clang-tidy
 
+.idea/
 .vscode/
 .github/
 

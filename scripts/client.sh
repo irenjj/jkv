@@ -1,11 +1,11 @@
-cd build/example/disk_kv
+cd build/example/echo
 
 # put op
-./kv_client --ip 127.0.0.1 \
-            --port 10000 \
-            --op_type "put" \
-            --key "k1" \
-            --val "v1"
+./echo_client --ip 127.0.0.1 \
+              --port 10000 \
+              --op_type "put" \
+              --key "k1" \
+              --val "v1"
 
 ## get op
 #./kv_client --ip 127.0.0.1 \
