@@ -7,6 +7,7 @@
 #include "disk_kv/common/config.h"
 #include "disk_kv/peer/peer.h"
 #include "disk_kv/peer/peer_host.h"
+#include "disk_kv/service/kv_service.h"
 #include "disk_kv/service/raft_msg_service.h"
 
 void CheckFlags() {
@@ -20,7 +21,7 @@ void CheckFlags() {
     JLOG_FATAL << "should input ip";
   }
   if (jkv::FLAGS_port < 1024 || jkv::FLAGS_port > 65535) {
-    JLOG_FATAL << "should input true port";
+    JLOG_FATAL << "should input correct port";
   }
   if (jkv::FLAGS_members.empty()) {
     JLOG_FATAL << "should input members";
@@ -33,14 +34,13 @@ void CheckFlags() {
   }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   CheckFlags();
 
   // init log
   jrpc::AppOption app_opt;
   app_opt.log_option.level = jkv::FLAGS_log_level;
-  app_opt.log_option.path = "";
   jrpc::AppInit(app_opt);
 
   // init opt
@@ -48,17 +48,20 @@ int main(int argc, char** argv) {
   w_opt.enable_mempool = true;
   jkv::PeerHostOption host_opt;
   host_opt.host_id = jkv::FLAGS_host_id;
-  host_opt.db_path = jkv::FLAGS_host_path + "/db";
+  host_opt.db_path =
+      jkv::FLAGS_host_path + "_" + std::to_string(host_opt.host_id);
 
   // construct host
   jrpc::SockAddress addr(jkv::FLAGS_ip, jkv::FLAGS_port);
-  auto event_wc = new jrpc::EventWorkerColony(1, w_opt, nullptr);
+  auto event_wc = std::make_shared<jrpc::EventWorkerColony>(1, w_opt, nullptr);
   event_wc->Start();
-  auto* rpc_server = new jrpc::RpcServer(jrpc::kTcp, addr, "kv_server",
-                                                    event_wc->option(), event_wc);
+  auto rpc_server =
+      std::make_shared<jrpc::RpcServer>(jrpc::kTcp, addr, "kv_server",
+                                        event_wc->option(), event_wc.get());
   host_opt.worker = event_wc->GetWorker();
   host_opt.storage = std::make_shared<jraft::MemoryStorage>();
-  auto host = new jkv::PeerHost(host_opt);
+  std::shared_ptr<jkv::PeerHost> host =
+      std::make_shared<jkv::PeerHost>(host_opt);
 
   // construct peer
   jkv::PeerOption peer_opt;
@@ -73,8 +76,11 @@ int main(int argc, char** argv) {
   host->mutable_local_peers(jkv::FLAGS_peer_id)->StartTimer();
 
   // register service
-  auto raft_mgs_service = new jkv::RaftMsgServiceImpl(host);
-  rpc_server->AddService(raft_mgs_service);
+  auto raft_msg_service =
+      std::make_shared<jkv::RaftMsgServiceImpl>(host.get());
+ auto kv_service = std::make_shared<jkv::KvServiceImpl>(host.get());
+  rpc_server->AddService(raft_msg_service.get());
+  rpc_server->AddService(kv_service.get());
   rpc_server->Start();
 
   jrpc::AppRunUntilAskedToQuit("kv_server");

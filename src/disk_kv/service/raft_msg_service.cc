@@ -27,7 +27,7 @@ void RaftMsgServiceImpl::HandleRaftMsgCb(
     RaftMsgResp* resp, ::google::protobuf::Closure* done) {
   jrpc::ClosureGuard done_guard(done);
   PeerPtr peer = host_->mutable_local_peers(req->to_peer().peer_id());
-  if (peer == nullptr) {
+  if (!peer) {
     JLOG_FATAL << "peer should exist";
   }
   peer->Step(req->msg());

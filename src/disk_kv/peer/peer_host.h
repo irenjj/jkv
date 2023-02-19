@@ -32,6 +32,7 @@ class PeerHost {
     }
     return local_peers_[i];
   }
+  std::string db_path() const { return host_opt_.db_path; }
 
  private:
   void CheckPeerOption(const PeerOption& peer_opt) const;

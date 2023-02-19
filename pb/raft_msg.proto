@@ -1,0 +1,18 @@
+syntax = "proto3";
+package jkv;
+option cc_generic_services = true;
+
+import "eraft.proto";
+import "meta.proto";
+
+message RaftMsgReq {
+  PeerMeta from_peer = 1;
+  PeerMeta to_peer = 2;
+  jraft.Message msg = 3;
+}
+
+message RaftMsgResp {}
+
+service RaftMsgService {
+  rpc HandleRaftMsg(RaftMsgReq) returns (RaftMsgResp);
+}

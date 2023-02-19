@@ -8,11 +8,13 @@
 #include <deque>
 
 #include "disk_kv/common/config.h"
+#include "kv_op.pb.h"
 #include "memory_storage.h"
-#include "raft_server.pb.h"
+#include "raft_msg.pb.h"
 
 namespace jkv {
 
+class DiskStorage;
 class PeerHost;
 
 // some address infos of same group of peers on different hosts
@@ -63,7 +65,7 @@ class Peer {
 
   void SendMsgs(const std::vector<jraft::Message>& msgs);
   void SendMsg2Peer(const jraft::Message& msg);
-  void HandleSendMsg2Peer(jrpc::RpcController* cntl, RaftMsgResp* cb);
+  void HandleSendMsg2Peer(jrpc::RpcController* cntl, RaftMsgResp* resp);
 
   void ProcessEntries(const std::vector<jraft::EntryPtr>& entries);
   void ProcessEntry(const jraft::EntryPtr& entry);
@@ -84,6 +86,7 @@ class Peer {
   // all member info of the group
   std::unordered_map<HostId, GroupMember> peers_;
   jraft::RawNode* raw_node_;
+  DiskStorage* kv_db_;
   std::deque<ProposalPtr> proposals_;
 };
 

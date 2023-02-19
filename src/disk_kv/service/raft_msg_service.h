@@ -4,7 +4,7 @@
 #include <jrpc/net/rpc/closure_guard.h>
 #include <jrpc/net/rpc/rpc_controller.h>
 
-#include "raft_server.pb.h"
+#include "raft_msg.pb.h"
 
 namespace jkv {
 

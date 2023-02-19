@@ -8,6 +8,7 @@
 #include <functional>
 
 #include "disk_kv/peer/peer_host.h"
+#include "disk_kv/storage/disk_storage.h"
 
 namespace jkv {
 
@@ -16,7 +17,8 @@ Peer::Peer(const PeerOption& peer_opt, PeerHost* host)
       self_(peer_opt.host_id, peer_opt.peer_id, peer_opt.ip, peer_opt.port),
       mem_storage_(peer_opt.storage),
       worker_(peer_opt.worker),
-      raw_node_(nullptr) {
+      raw_node_(nullptr),
+      kv_db_(nullptr) {
   // initialize members_
   InitGroupMembers(peer_opt.members);
 
@@ -52,11 +54,16 @@ Peer::Peer(const PeerOption& peer_opt, PeerHost* host)
     conf_state->add_voters(p.first);
   }
   raw_node_ = new jraft::RawNode(c);
+  kv_db_ = new DiskStorage(host_->db_path() + "/" + "peer_" +
+                           std::to_string(peer_opt.peer_id));
 }
 
 Peer::~Peer() {
   if (raw_node_) {
     delete raw_node_;
+  }
+  if (kv_db_) {
+    delete kv_db_;
   }
 }
 
@@ -76,13 +83,17 @@ jraft::ErrNum Peer::Step(const jraft::Message& msg) {
 
 void Peer::ProposeKvOp(const KvReq* req, KvResp* resp,
                        ::google::protobuf::Closure* done) {
-  uint64_t ni = NextProposalIndex();
-  ProposalPtr p = std::make_shared<Proposal>(ni, Term(), resp, done);
   std::string context;
   if (!req->SerializeToString(&context)) {
     JLOG_FATAL << "failed to serialize to str";
   }
   raw_node_->Propose(context);
+
+  uint64_t ni = NextProposalIndex();
+  ProposalPtr p = std::make_shared<Proposal>(ni, Term(), resp, done);
+  if (IsLeader()) {
+    proposals_.push_back(p);
+  }
 }
 
 // members format: host1,peer1,ip1,port1|host2,peer2,ip2,port2|...
@@ -157,7 +168,10 @@ void Peer::SendMsg2Peer(const jraft::Message& msg) {
   stub.HandleRaftMsg(cntl, &raft_msg, raft_msg_cb, done);
 }
 
-void Peer::HandleSendMsg2Peer(jrpc::RpcController* cntl, RaftMsgResp* cb) {}
+void Peer::HandleSendMsg2Peer(jrpc::RpcController* cntl, RaftMsgResp* resp) {
+  std::unique_ptr<jrpc::RpcController> cntl_guard(cntl);
+  std::unique_ptr<RaftMsgResp> resp_guard(resp);
+}
 
 void Peer::ProcessEntries(const std::vector<jraft::EntryPtr>& entries) {
   for (const auto& ent : entries) {
@@ -185,7 +199,33 @@ void Peer::ProcessNormal(const jraft::EntryPtr& entry, const ProposalPtr& p) {
   if (!req.ParseFromString(entry->data())) {
     JLOG_FATAL << "failed to parse from str";
   }
-  // TODO: finish it
+  CmdType type = req.cmd_type();
+  if (type == kInvalid) {
+    JLOG_DEBUG << "no op";
+    return;
+  } else if (type == kGet) {
+    const GetReq& get_req = req.get_req();
+    std::string val = kv_db_->Get(get_req.key());
+    if (p != nullptr) {
+      GetResp* get_resp = p->resp->mutable_get_resp();
+      get_resp->set_value(val);
+      p->done->Run();
+    }
+  } else if (type == kPut) {
+    const PutReq& put_req = req.put_req();
+    kv_db_->Put(put_req.key(), put_req.value());
+    if (p != nullptr) {
+      p->done->Run();
+    }
+  } else if (type == kDel) {
+    const DelReq& del_req = req.del_req();
+    kv_db_->Del(del_req.key());
+    if (p != nullptr) {
+      p->done->Run();
+    }
+  } else {
+    JLOG_FATAL << "should not come here.";
+  }
 }
 
 void Peer::ProcessConfChange(const jraft::EntryPtr& entry,
